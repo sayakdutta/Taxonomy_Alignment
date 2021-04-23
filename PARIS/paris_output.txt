@@ -1,0 +1,16 @@
+country country 0.7329047107036685
+capitalcity capitalcity 0.7862758867319845
+placeofbirth placeofbirth 0.9023029256798918
+placeofdeath placeofdeath 0.9303107362453329
+spouse spouse 0.9039854797350718
+child child 0.5450561326268535
+influencedby influencedby 0.9715635351626497
+influenced student 0.7072132843216398
+keypeople chiefexecutiveofficer 0.5549878693892885
+inofficepresident headofstate 0.6172210366411734
+sourcemountain sourceofwatercourse 0.5
+sourceplace sourceofwatercourse 0.5
+rivermouth mouthofwatercourse 1.0
+significantbuilding notablework 1.0
+ground homevenue 1.0
+discoverer discoverer 1.0
