@@ -17,9 +17,9 @@ import operator
 
     
 
-f=open("C://Users//sayakdibyo//Pictures//btp_21//outputall.txt","r",encoding='utf-8')
-out=open("C://Users//sayakdibyo//Pictures//btp_21//outputall_final.txt","w",encoding='utf-8')
-g=open("C://Users//sayakdibyo//Pictures//btp_21//outputall_new.txt","r",encoding='utf-8')
+f=open("C://Users//sayakdibyo//Pictures//btp_21//output.txt","r",encoding='utf-8')
+out=open("C://Users//sayakdibyo//Pictures//btp_21//output_final.txt","w",encoding='utf-8')
+g=open("C://Users//sayakdibyo//Pictures//btp_21//output_new.txt","r",encoding='utf-8')
 Lines = f.readlines()
 db={}
 dbi={}
