@@ -45,14 +45,14 @@ r1,r2=set(),set()
 en_db,en_wi=set(),set()
 temp=set()
 
-#Return 1 for lexicographically identical sentences
+"""Return 1 for lexicographically identical sentences"""
 def probability(a,b):
     if(a==b):
         return 1.0
     else:
         return 0
 
-#Traverse a directory and read tsv files
+"""Traverse a directory and read tsv files"""
 def read_file(path,s=''):
     if(s=="dbpedia"):
         t1=0
@@ -86,8 +86,7 @@ def read_file(path,s=''):
                         e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
                         r=r.lower()
                         
-                        #e1=e1+"_"+r
-                        #e2=e2+"_"+v[-1].lower()
+                       
                         if r not in reld.keys():
                             reld[r]={}
                             reldi[r]={}
@@ -122,12 +121,12 @@ def read_file(path,s=''):
                 Lines = g.readlines() 	
             
                 for line in Lines: 
-                        
+                        """
                         t2+=1
                         
                         if(t2>50000):
                             break
-                        
+                        """
                         #print(line)
                         v=re.split('[-_,;:.\t ]', line)
                 		
@@ -147,8 +146,7 @@ def read_file(path,s=''):
                         e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
                         r=r.lower()
                         
-                        #e1=e1+"_"+r
-                        #e2=e2+"_"+v[-1].lower()
+                        
                         if r not in relw.keys():
                             relw[r]={}
                             relwi[r]={}
@@ -241,30 +239,8 @@ for line in Lines:
 
 
         
-"""    
-original_stdout = sys.stdout
-with open('C://Users//sayakdibyo//Pictures//btp_21//old_instance.txt', 'w') as out:
-    for it in en_db:
-            sys.stdout=out
-            print(it,it,1)
-            
-            for itr in en_wi:
-                if(it!=itr):
-                    print(it,itr,1e-6)
-                    print(itr,it,1e-6)
-    		  	
-                   
-            sys.stdout=original_stdout
-            
-    for it in en_wi:
-        if it not in en_db:
-            sys.stdout=out
-            print(it,it,1)
-            sys.stdout=original_stdout
- 
-out.close()
-"""
-#Calculating inverse functionality of dbpedia/wikidata relations
+
+"""Calculating inverse functionality of dbpedia/wikidata relations"""
 def inv_functionality(a=''):
     if(a=="dbpedia"):
         for i in reldi.keys():
@@ -282,7 +258,7 @@ def inv_functionality(a=''):
             func_w[i]=1.0/(sum/len(relwi[i]))
 
 
-#Finding entity 2 in dbpedia that are also present in wikidata
+"""Finding entity 2 in dbpedia that are also present in wikidata"""
 def similar_y():
     for i in en_db:
         if i in en_wi:
@@ -294,7 +270,7 @@ def similar_y():
                 prob_y[i]=set()
                 prob_y[i].add(i)
                 
-                
+""" Calculating subsumption probabilities of relation pairs """              
 def subset_calc(str=''):
 	#Initialising subset probabilities=0.1
     if(str=="init"):
@@ -429,7 +405,7 @@ def subset_calc(str=''):
                else:
                    sub[(m,n)]=sum1/sum2;
     
-#Calculates equivalence probabilities of each of the first entities of wikidata and dbpedia 
+"""Calculates equivalence probabilities of each of the first entities of wikidata and dbpedia """
 def equiv_calc():
     for itr in r1:
             
@@ -470,40 +446,8 @@ def equiv_calc():
                             prob_y[itr].add(it)
             
 			        
-"""
-#Calculating inverse functionality of wikidata relations        
-for i in relwi.keys():
-		sum=0.0
-		for j in relwi[i].keys():
-			sum+=relwi[i][j]
-        
-		func_w[i]=1.0/(sum/len(relwi[i]))
-"""
-"""
-iter=4
-for i in reld.keys():
-        for j in relw.keys():
-               
-            sub[(i,j)]=0.1;
-            sub[(j,i)]=0.1;
 
-
-
-"""
-"""
-temp=set()
-for i in en_db:
-    if i in en_wi:
-        
-        prob[(i,i)]=1
-        if i in prob_y.keys():
-            prob_y[i].add(i)
-        else:
-            prob_y[i]=set()
-            prob_y[i].add(i)
-"""
-
-#This function performs the PARIS technique 
+"""This function performs the PARIS technique """
 def paris_calc(iter=4):
     
     subset_calc("init")
@@ -516,169 +460,7 @@ def paris_calc(iter=4):
         equiv_calc()
         subset_calc()
 
-"""        
-while(iter>0):
-        iter-=1
-        print(datetime.datetime.now().time())
-        for itr in r1:
-            
-           
-            #print(itr,len(temp))
-            temp.clear()
-            for m in rely_d[itr]:
-                if m[1] in prob_y.keys():
-                    for n in prob_y[m[1]]:
-                        #print(m[1],n)
-                        for k in relx_w[n]:
-                            temp.add(k[1])
-                        
-                
-            for it in temp:
-                prod=1.0
-                #print(itr)
-                for m in rely_d[itr]:
-                    for n in rely_w[it]:
-                        if (m[1],n[1]) not in prob.keys():
-                            p=probability(m[1],n[1])
-                        else:
-                            p=prob[(m[1],n[1])]
-                        prod*=(1-sub[(n[0],m[0])]*func[m[0]]*p)*(1-sub[(m[0],n[0])]*func_w[n[0]]*p)
-					
-            
-                if(prod<=0.1):
-                    prob[(itr,it)]=prob[(it,itr)]=1-prod
-                    if(itr in en_db and it in en_wi):
-                        if itr in prob_y.keys():
-                            prob_y[itr].add(it)
-                        else:
-                            prob_y[itr]=set()
-                            prob_y[itr].add(it)
-            
-			
-        print(datetime.datetime.now().time())
-        print(len(reld))
-        for m in reld.keys():
-            sum2=0.0;
-            
-            for p in all_entitypairs_d[m]:
-               	  
-               	  prod2=1.0;
-               	  for k in all_entitypairs_w:
-   	   	
-               	   	for l in all_entitypairs_w[k]:
-   	   	
-               	   		
-                                  if (p[0],l[0]) not in prob.keys():
-                                     x=probability(p[0],l[0])
-                                  else:
-                                      x=prob[(p[0],l[0])]
-                                          
-                                
-                                  if (p[1],l[1]) not in prob.keys():
-                                     y=probability(p[1],l[1])
-                                  else:
-                                      y=prob[(p[1],l[1])]
-                                  prod2=prod2*(1-x*y)
-   	   	    
-   	   	
-   	   	
-                           	   
-                  sum2+=1-prod2;
-            
-            for n in relw.keys():
-		
-               sum1=0.0
-               for p in all_entitypairs_d[m]:
-               	  
-                   prod1=1.0
 
-                   for l in all_entitypairs_w[n]:
-   	   	
-                       if (p[0],l[0]) not in prob.keys():
-                                     x=probability(p[0],l[0])
-                       else:
-                                      x=prob[(p[0],l[0])]
-                                          
-                                
-                       if (p[1],l[1]) not in prob.keys():
-                                     y=probability(p[1],l[1])
-                       else:
-                                      y=prob[(p[1],l[1])]
-                       prod1=prod1*(1-x*y)
-               	   	
-               	   sum1+=1-prod1;
-               
-               if(sum2==0):
-                   sub[(m,n)]=0
-               else:
-                   sub[(m,n)]=sum1/sum2;
-               
-               
-		
-        print(datetime.datetime.now().time())
-        
-        for m in relw.keys():
-            sum2=0.0;
-           
-            for p in all_entitypairs_w[m]:
-               	  
-               	  prod2=1.0;
-               	  for k in all_entitypairs_d:
-   	   	
-               	   	for l in all_entitypairs_d[k]:
-   	   	
-               	   		
-                          if (p[0],l[0]) not in prob.keys():
-                                     x=probability(p[0],l[0])
-                          else:
-                                      x=prob[(p[0],l[0])]
-                                          
-                                
-                          if (p[1],l[1]) not in prob.keys():
-                                     y=probability(p[1],l[1])
-                          else:
-                                      y=prob[(p[1],l[1])]
-                          prod2=prod2*(1-x*y)
-   	   	    
-   	   	
-   	   	
-                           	   
-               	  sum2+=1-prod2
-               
-               
-               
-            for n in reld.keys():
-		
-               sum1=0.0
-               for p in all_entitypairs_w[m]:
-               	  
-                   prod1=1.0
-
-                   for l in all_entitypairs_d[n]:
-   	   	
-                           if (p[0],l[0]) not in prob.keys():
-                                     x=probability(p[0],l[0])
-                           else:
-                                      x=prob[(p[0],l[0])]
-                                          
-                                
-                           if (p[1],l[1]) not in prob.keys():
-                                     y=probability(p[1],l[1])
-                           else:
-                                      y=prob[(p[1],l[1])]
-                           prod1=prod1*(1-x*y)
-               	   	
-               	   sum1+=1-prod1;
-               if(sum2==0):
-                   sub[(m,n)]=0
-               else:
-                   sub[(m,n)]=sum1/sum2;
-	
-		
-
-		
-               
-"""
 #print(len(reld),len(relw),len(prob))
 if __name__=="__main__":
     
