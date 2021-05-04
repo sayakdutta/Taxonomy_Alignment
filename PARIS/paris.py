@@ -9,157 +9,171 @@ import re
 import sys
 import fileinput
 import datetime
+import os
 
 from wikidata.client import Client
 from qwikidata.linked_data_interface import get_entity_dict_from_api
 from qwikidata.entity import WikidataItem, WikidataProperty, WikidataLexeme
 
 
-f=open("C://Users//sayakdibyo//Pictures//btp_21//1.tsv","r",encoding='latin-1') #read dbpedia file
-g=open("C://Users//sayakdibyo//Pictures//btp_21//_1.tsv","r",encoding='latin-1') #read wikidata file
+
 
 #out=open("C://Users//sayakdibyo//Pictures//btp_21//paris_output.txt","w");
 
 """
 reld[r][x]:- dictionary that stores for each r and x in dbpedia,no of y for which r(x,y) exists
 reldi[r][y]:-dictionary that stores for each r and y in dbpedia,no of x for which r^-1(y,x) exists
+relw[r][x]:- dictionary that stores for each r and x in wikidata,no of y for which r(x,y) exists
+relwi[r][y]:-dictionary that stores for each r and y in wikidata,no of x for which r^-1(y,x) exists
 sub(i,j):- stores probability that i is subset of j
 prob(i,j):-stores probability that i is equivalent to j with probability greater than 0.9
 prob_y:- keeps track of y in dbpedia for which identical y' exists in wikidata
-func and funcl:- functionality inverse of each relation in dbpedia and wikidata respectively
+func_d and func_w:- functionality inverse of each relation in dbpedia and wikidata respectively
 r1,r2:- set that stores first entity in dbpedia and wikidata respectively
-cnt1[r],cnt2[r]:- set that stores all (x,y) pairs for each relation in dbpedia and wikidata respectively
-chk1[x]:- set that stores all (r,e2) pairs for dbpedia
-chk1_r[y]:- set that stores all (r,e2) pairs for dbpedia
+all_entitypairs_d[r],all_entitypairs_w[r]:- set that stores all (x,y) pairs for each relation in dbpedia and wikidata respectively
+rely_d[x]:- set that stores all (r,e2) pairs for dbpedia
+relx_d[y]:- set that stores all (r,e1) pairs for dbpedia
+rely_w[x]:- set that stores all (r,e2) pairs for wikidata
+relx_w[y]:- set that stores all (r,e1) pairs for wikidata
 """
 reld,relw,sub,prob,reldi,relwi={},{},{},{},{},{}
 prob_y={}
-func,funcl={},{}
-cnt1,cnt2,chk1,chk2={},{},{},{}
-chk1_r,chk2_r={},{}
+func_d,func_w={},{}
+all_entitypairs_d,all_entitypairs_w,rely_d,rely_w={},{},{},{}
+relx_d,relx_w={},{}
 r1,r2=set(),set()
 en_db,en_wi=set(),set()
+temp=set()
 
 #Return 1 for lexicographically identical sentences
 def probability(a,b):
     if(a==b):
-        #prob[(a,b)]=1.0
         return 1.0
     else:
-        #prob[(a,b)]=1e-6
-        #prob[(b,a)]=1e-6
         return 0
 
-t1,t2=0,0
-Lines = f.readlines() 	
-for line in Lines: 
-        """
-        t1+=1
-        
-        if(t1>50000):
-            break
-        """
-        #print(line)
-        v=re.split('[-_,;:.\t ]', line)
-		
-		
-        e1,e2="",""
-        r=""
-        #print(v)
-        for i in range(len(v)):  #find the position of relation
-            if(v[i]=="Person" or v[i]=="Location" or v[i]=="Organization"):
-                r=v[i+1]
-                break
-        for j in range(i): #get first entity
-            e1+=v[j]
-        for j in range(i+2,len(v)-1):  #get second entity
-            e2+=v[j]
-        e1=e1.lower()+"_"+v[i].lower()   
-        e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
-        r=r.lower()
-        
-        #e1=e1+"_"+r
-        #e2=e2+"_"+v[-1].lower()
-        if r not in reld.keys():
-            reld[r]={}
-            reldi[r]={}
-        if e1 not in reld[r].keys():
-            reld[r][e1]=1.0
-        else:
-            reld[r][e1]+=1
-        if e2 not in reldi[r].keys():
-            reldi[r][e2]=1.0
-        else:
-            reldi[r][e2]+=1
-        r1.add(e1)
-        #en_db.add(e1)
-        en_db.add(e2)
-        if r not in cnt1.keys():
-            cnt1[r]=set()
-        if e1 not in chk1.keys():
-            chk1[e1]=set()
-        if e2 not in chk1_r.keys():
-            chk1_r[e2]=set()
-        cnt1[r].add((e1,e2))
-        #print(e1)
-        chk1[e1].add((r,e2))
-        chk1_r[e2].add((r,e1))
-        
-Lines = g.readlines() 	
-
-for line in Lines: 
-        """
-        t2+=1
-        
-        if(t2>50000):
-            break
-        """
-        #print(line)
-        v=re.split('[-_,;:.\t ]', line)
-		
-		
-        e1,e2="",""
-        r=""
-        #print(v)
-        for i in range(len(v)):
-            if(v[i]=="Person" or v[i]=="Location" or v[i]=="Organization"):
-                r=v[i+1]
-                break
-        for j in range(i):
-            e1+=v[j]
-        for j in range(i+2,len(v)-1):
-            e2+=v[j]
-        e1=e1.lower()+"_"+v[i].lower()
-        e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
-        r=r.lower()
-        
-        #e1=e1+"_"+r
-        #e2=e2+"_"+v[-1].lower()
-        if r not in relw.keys():
-            relw[r]={}
-            relwi[r]={}
-        if e1 not in relw[r].keys():
-            relw[r][e1]=1.0
-        else:
-            relw[r][e1]+=1
-        if e2 not in relwi[r].keys():
-            relwi[r][e2]=1.0
-        else:
-            relwi[r][e2]+=1
-        r2.add(e1)
-        #en_wi.add(e1)
-        en_wi.add(e2)
-        if r not in cnt2.keys():
-            cnt2[r]=set()
-        if e1 not in chk2.keys():
-            chk2[e1]=set()
-        if e2 not in chk2_r.keys():
-            chk2_r[e2]=set()
-        cnt2[r].add((e1,e2))
-        #print(e1)
-        chk2[e1].add((r,e2))
-        chk2_r[e2].add((r,e1))
-        
+#Traverse a directory and read tsv files
+def read_file(path,s=''):
+    if(s=="dbpedia"):
+        t1=0
+        for file in os.listdir(path):
+            if(file.endswith("tsv")):
+                
+                f=open(os.path.join(path,file),"r",encoding='latin-1') #read dbpedia file
+                Lines = f.readlines() 	
+                for line in Lines: 
+                        """
+                        t1+=1
+                        
+                        if(t1>50000):
+                            break
+                        """
+                        #print(line)
+                        v=re.split('[-_,;:.\t ]', line)#split all names based on delimiters
+                		
+                		
+                        e1,e2="",""
+                        r=""
+                        for i in range(len(v)):  #find the position of relation
+                            if(v[i]=="Person" or v[i]=="Location" or v[i]=="Organization"):
+                                r=v[i+1]
+                                break
+                        for j in range(i): #get first entity
+                            e1+=v[j]
+                        for j in range(i+2,len(v)-1):  #get second entity
+                            e2+=v[j]
+                        e1=e1.lower()+"_"+v[i].lower()   
+                        e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
+                        r=r.lower()
+                        
+                        #e1=e1+"_"+r
+                        #e2=e2+"_"+v[-1].lower()
+                        if r not in reld.keys():
+                            reld[r]={}
+                            reldi[r]={}
+                        if e1 not in reld[r].keys():
+                            reld[r][e1]=1.0
+                        else:
+                            reld[r][e1]+=1
+                        if e2 not in reldi[r].keys():
+                            reldi[r][e2]=1.0
+                        else:
+                            reldi[r][e2]+=1
+                        r1.add(e1)
+                        #en_db.add(e1)
+                        en_db.add(e2)
+                        if r not in all_entitypairs_d.keys():
+                            all_entitypairs_d[r]=set()
+                        if e1 not in rely_d.keys():
+                            rely_d[e1]=set()
+                        if e2 not in relx_d.keys():
+                            relx_d[e2]=set()
+                        all_entitypairs_d[r].add((e1,e2))
+                        #print(e1)
+                        rely_d[e1].add((r,e2))
+                        relx_d[e2].add((r,e1))
+     
+    else:
+        t2=0
+        for file in os.listdir(path):
+            if(file.endswith("tsv")):
+                
+                g=open(os.path.join(path,file),"r",encoding='latin-1') #read wikidata file
+                Lines = g.readlines() 	
+            
+                for line in Lines: 
+                        
+                        t2+=1
+                        
+                        if(t2>50000):
+                            break
+                        
+                        #print(line)
+                        v=re.split('[-_,;:.\t ]', line)
+                		
+                		
+                        e1,e2="",""
+                        r=""
+                        #print(v)
+                        for i in range(len(v)):
+                            if(v[i]=="Person" or v[i]=="Location" or v[i]=="Organization"):
+                                r=v[i+1]
+                                break
+                        for j in range(i):
+                            e1+=v[j]
+                        for j in range(i+2,len(v)-1):
+                            e2+=v[j]
+                        e1=e1.lower()+"_"+v[i].lower()
+                        e2=e2.lower()+"_"+(v[-1].rstrip()).lower()
+                        r=r.lower()
+                        
+                        #e1=e1+"_"+r
+                        #e2=e2+"_"+v[-1].lower()
+                        if r not in relw.keys():
+                            relw[r]={}
+                            relwi[r]={}
+                        if e1 not in relw[r].keys():
+                            relw[r][e1]=1.0
+                        else:
+                            relw[r][e1]+=1
+                        if e2 not in relwi[r].keys():
+                            relwi[r][e2]=1.0
+                        else:
+                            relwi[r][e2]+=1
+                        r2.add(e1)
+                        #en_wi.add(e1)
+                        en_wi.add(e2)
+                        if r not in all_entitypairs_w.keys():
+                            all_entitypairs_w[r]=set()
+                        if e1 not in rely_w.keys():
+                            rely_w[e1]=set()
+                        if e2 not in relx_w.keys():
+                            relx_w[e2]=set()
+                        all_entitypairs_w[r].add((e1,e2))
+                        #print(e1)
+                        rely_w[e1].add((r,e2))
+                        relx_w[e2].add((r,e1))
+                    
 
 """
 Lines = g.readlines() 
@@ -217,12 +231,12 @@ for line in Lines:
         r2.add(e1);
         en_wi.add(e1)
         en_wi.add(e2);
-        if r not in cnt2.keys():
-            cnt2[r]=set()
-        if e1 not in chk2.keys():
-            chk2[e1]=set()
-        cnt2[r].add((e1,e2));
-        chk2[e1].add((r,e2));
+        if r not in all_entitypairs_w.keys():
+            all_entitypairs_w[r]=set()
+        if e1 not in rely_w.keys():
+            rely_w[e1]=set()
+        all_entitypairs_w[r].add((e1,e2));
+        rely_w[e1].add((r,e2));
 """
 
 
@@ -250,22 +264,222 @@ with open('C://Users//sayakdibyo//Pictures//btp_21//old_instance.txt', 'w') as o
  
 out.close()
 """
-#Calculating inverse functionality of dbpedia relations
-for i in reldi.keys():
-		sum=0.0
-		for j in reldi[i].keys():
-			sum+=reldi[i][j]
-        
-		func[i]=1.0/(sum/len(reldi[i]))
+#Calculating inverse functionality of dbpedia/wikidata relations
+def inv_functionality(a=''):
+    if(a=="dbpedia"):
+        for i in reldi.keys():
+        		sum=0.0
+        		for j in reldi[i].keys():
+        			sum+=reldi[i][j]
+                
+        		func_d[i]=1.0/(sum/len(reldi[i]))
+    else:
+        for i in relwi.keys():
+            sum=0.0
+            for j in relwi[i].keys():
+                sum+=relwi[i][j]
+            
+            func_w[i]=1.0/(sum/len(relwi[i]))
 
+
+#Finding entity 2 in dbpedia that are also present in wikidata
+def similar_y():
+    for i in en_db:
+        if i in en_wi:
+            
+            prob[(i,i)]=1
+            if i in prob_y.keys():
+                prob_y[i].add(i)
+            else:
+                prob_y[i]=set()
+                prob_y[i].add(i)
+                
+                
+def subset_calc(str=''):
+	#Initialising subset probabilities=0.1
+    if(str=="init"):
+        for i in reld.keys():
+            for j in relw.keys():
+               
+                sub[(i,j)]=0.1
+                sub[(j,i)]=0.1
+        return
+    
+    """Beginning subsumption calculation of each dbpedia rel wrt wikidata rel"""
+
+    for m in reld.keys():
+            sum2=0.0;
+            
+            """" Calculating denominator of subsumption calculation """
+            for p in all_entitypairs_d[m]:
+               	  
+               	  prod2=1.0;
+               	  for k in all_entitypairs_w:
+   	   	
+               	   	for l in all_entitypairs_w[k]:
+   	   	
+               	   		
+                                  if (p[0],l[0]) not in prob.keys():
+                                     x=probability(p[0],l[0])
+                                  else:
+                                      x=prob[(p[0],l[0])]
+                                          
+                                
+                                  if (p[1],l[1]) not in prob.keys():
+                                     y=probability(p[1],l[1])
+                                  else:
+                                      y=prob[(p[1],l[1])]
+                                  prod2=prod2*(1-x*y)
+   	   	    
+   	   	
+   	   	
+                           	   
+                  sum2+=1-prod2;
+            
+            """" Calculating numerator of subsumption calculation """
+            for n in relw.keys():
+		
+               sum1=0.0
+               for p in all_entitypairs_d[m]:
+               	  
+                   prod1=1.0
+
+                   for l in all_entitypairs_w[n]:
+   	   	
+                       if (p[0],l[0]) not in prob.keys():
+                                     x=probability(p[0],l[0])
+                       else:
+                                      x=prob[(p[0],l[0])]
+                                          
+                                
+                       if (p[1],l[1]) not in prob.keys():
+                                     y=probability(p[1],l[1])
+                       else:
+                                      y=prob[(p[1],l[1])]
+                       prod1=prod1*(1-x*y)
+               	   	
+               	   sum1+=1-prod1;
+               
+               if(sum2==0):
+                   sub[(m,n)]=0
+               else:
+                   sub[(m,n)]=sum1/sum2;
+               
+               
+		
+        #print(datetime.datetime.now().time())
+
+    """Beginning subsumption calculation of each wikidata rel wrt dbpedia rel"""
+        
+    for m in relw.keys():
+            sum2=0.0;
+            
+            """ Calculating denominator of subsumption calculation """
+            for p in all_entitypairs_w[m]:
+               	  
+               	  prod2=1.0;
+               	  for k in all_entitypairs_d:
+   	   	
+               	   	for l in all_entitypairs_d[k]:
+   	   	
+               	   		
+                          if (p[0],l[0]) not in prob.keys():
+                                     x=probability(p[0],l[0])
+                          else:
+                                      x=prob[(p[0],l[0])]
+                                          
+                                
+                          if (p[1],l[1]) not in prob.keys():
+                                     y=probability(p[1],l[1])
+                          else:
+                                      y=prob[(p[1],l[1])]
+                          prod2=prod2*(1-x*y)
+   	   	    
+   	   	
+   	   	
+                           	   
+               	  sum2+=1-prod2
+               
+               
+            """ Calculating numerator of subsumption calculation """   
+            for n in reld.keys():
+		
+               sum1=0.0
+               for p in all_entitypairs_w[m]:
+               	  
+                   prod1=1.0
+
+                   for l in all_entitypairs_d[n]:
+   	   	
+                           if (p[0],l[0]) not in prob.keys():
+                                     x=probability(p[0],l[0])
+                           else:
+                                      x=prob[(p[0],l[0])]
+                                          
+                                
+                           if (p[1],l[1]) not in prob.keys():
+                                     y=probability(p[1],l[1])
+                           else:
+                                      y=prob[(p[1],l[1])]
+                           prod1=prod1*(1-x*y)
+               	   	
+               	   sum1+=1-prod1;
+               if(sum2==0):
+                   sub[(m,n)]=0
+               else:
+                   sub[(m,n)]=sum1/sum2;
+    
+#Calculates equivalence probabilities of each of the first entities of wikidata and dbpedia 
+def equiv_calc():
+    for itr in r1:
+            
+           
+            #print(itr,len(temp))
+            temp.clear()
+
+            """ For each x in dbpedia,find y such that there exists a 
+                y' in wikidata such that Pr(y==y')>=0.9 """
+            for m in rely_d[itr]:
+                if m[1] in prob_y.keys():
+                    for n in prob_y[m[1]]:
+                        #print(m[1],n)
+                        for k in relx_w[n]:
+                            temp.add(k[1])
+                        
+            """ Here we are calculating equivalence probabilities of plausible x and x' pairs """     
+            for it in temp:
+                prod=1.0
+                #print(itr)
+                for m in rely_d[itr]:
+                    for n in rely_w[it]:
+                        if (m[1],n[1]) not in prob.keys():
+                            p=probability(m[1],n[1])
+                        else:
+                            p=prob[(m[1],n[1])]
+                        
+                        prod*=(1-sub[(n[0],m[0])]*func_d[m[0]]*p)*(1-sub[(m[0],n[0])]*func_w[n[0]]*p)
+					
+            
+                if(prod<=0.1):
+                    prob[(itr,it)]=prob[(it,itr)]=1-prod
+                    if(itr in en_db and it in en_wi):
+                        if itr in prob_y.keys():
+                            prob_y[itr].add(it)
+                        else:
+                            prob_y[itr]=set()
+                            prob_y[itr].add(it)
+            
+			        
+"""
 #Calculating inverse functionality of wikidata relations        
 for i in relwi.keys():
 		sum=0.0
 		for j in relwi[i].keys():
 			sum+=relwi[i][j]
         
-		funcl[i]=1.0/(sum/len(relwi[i]))
-	
+		func_w[i]=1.0/(sum/len(relwi[i]))
+"""
+"""
 iter=4
 for i in reld.keys():
         for j in relw.keys():
@@ -275,7 +489,8 @@ for i in reld.keys():
 
 
 
-
+"""
+"""
 temp=set()
 for i in en_db:
     if i in en_wi:
@@ -286,8 +501,22 @@ for i in en_db:
         else:
             prob_y[i]=set()
             prob_y[i].add(i)
+"""
 
+#This function performs the PARIS technique 
+def paris_calc(iter=4):
+    
+    subset_calc("init")
+    similar_y()
+    inv_functionality("dbpedia")
+    inv_functionality("wikidata")
 
+    while(iter>0): #default no of iterations=4
+        iter-=1
+        equiv_calc()
+        subset_calc()
+
+"""        
 while(iter>0):
         iter-=1
         print(datetime.datetime.now().time())
@@ -296,24 +525,24 @@ while(iter>0):
            
             #print(itr,len(temp))
             temp.clear()
-            for m in chk1[itr]:
+            for m in rely_d[itr]:
                 if m[1] in prob_y.keys():
                     for n in prob_y[m[1]]:
                         #print(m[1],n)
-                        for k in chk2_r[n]:
+                        for k in relx_w[n]:
                             temp.add(k[1])
                         
                 
             for it in temp:
                 prod=1.0
                 #print(itr)
-                for m in chk1[itr]:
-                    for n in chk2[it]:
+                for m in rely_d[itr]:
+                    for n in rely_w[it]:
                         if (m[1],n[1]) not in prob.keys():
                             p=probability(m[1],n[1])
                         else:
                             p=prob[(m[1],n[1])]
-                        prod*=(1-sub[(n[0],m[0])]*func[m[0]]*p)*(1-sub[(m[0],n[0])]*funcl[n[0]]*p)
+                        prod*=(1-sub[(n[0],m[0])]*func[m[0]]*p)*(1-sub[(m[0],n[0])]*func_w[n[0]]*p)
 					
             
                 if(prod<=0.1):
@@ -331,12 +560,12 @@ while(iter>0):
         for m in reld.keys():
             sum2=0.0;
             
-            for p in cnt1[m]:
+            for p in all_entitypairs_d[m]:
                	  
                	  prod2=1.0;
-               	  for k in cnt2:
+               	  for k in all_entitypairs_w:
    	   	
-               	   	for l in cnt2[k]:
+               	   	for l in all_entitypairs_w[k]:
    	   	
                	   		
                                   if (p[0],l[0]) not in prob.keys():
@@ -359,11 +588,11 @@ while(iter>0):
             for n in relw.keys():
 		
                sum1=0.0
-               for p in cnt1[m]:
+               for p in all_entitypairs_d[m]:
                	  
                    prod1=1.0
 
-                   for l in cnt2[n]:
+                   for l in all_entitypairs_w[n]:
    	   	
                        if (p[0],l[0]) not in prob.keys():
                                      x=probability(p[0],l[0])
@@ -391,12 +620,12 @@ while(iter>0):
         for m in relw.keys():
             sum2=0.0;
            
-            for p in cnt2[m]:
+            for p in all_entitypairs_w[m]:
                	  
                	  prod2=1.0;
-               	  for k in cnt1:
+               	  for k in all_entitypairs_d:
    	   	
-               	   	for l in cnt1[k]:
+               	   	for l in all_entitypairs_d[k]:
    	   	
                	   		
                           if (p[0],l[0]) not in prob.keys():
@@ -421,11 +650,11 @@ while(iter>0):
             for n in reld.keys():
 		
                sum1=0.0
-               for p in cnt2[m]:
+               for p in all_entitypairs_w[m]:
                	  
                    prod1=1.0
 
-                   for l in cnt1[n]:
+                   for l in all_entitypairs_d[n]:
    	   	
                            if (p[0],l[0]) not in prob.keys():
                                      x=probability(p[0],l[0])
@@ -449,56 +678,71 @@ while(iter>0):
 
 		
                
-
+"""
 #print(len(reld),len(relw),len(prob))
-original_stdout = sys.stdout
-with open('C://Users//sayakdibyo//Pictures//btp_21//paris_output.txt', 'w') as out:
-    for itr in reld:
-        maxi=0.0
-        for it in relw:
-            sys.stdout=out
-            #print(itr,it,sub[(itr,it)])
-            if(sub[(itr,it)]*sub[(it,itr)]>maxi):
-                maxi=sub[(itr,it)]*sub[(it,itr)]
-                y=it
-        if(maxi>=0.45):
-            print(itr,y,maxi)   
-        sys.stdout=original_stdout
+if __name__=="__main__":
     
-original_stdout = sys.stdout
-with open('C://Users//sayakdibyo//Pictures//btp_21//equiv_output.txt', 'w') as out:
-    for itr in reld:
     
-        for it in relw:
-            sys.stdout=out
-            #print(itr,it,sub[(itr,it)])
-            if(sub[(itr,it)]*sub[(it,itr)]>=0.45):
-                print(itr,it)  
-         
-        sys.stdout=original_stdout
+       
+    read_file(sys.argv[1],"dbpedia")
+    read_file(sys.argv[2],"wikidata")
+    paris_calc()
+    original_stdout = sys.stdout
+
+    """ For each relation r in dbpedia,store a maximum equivalent unique relation r' in wikidata such that Pr(r==r')>=0.45"""
+    with open('C://Users//sayakdibyo//Pictures//btp_21//paris_output.txt', 'w') as out: 
+        for itr in reld:
+            maxi=0.0
+            for it in relw:
+                sys.stdout=out
+                #print(itr,it,sub[(itr,it)])
+                if(sub[(itr,it)]*sub[(it,itr)]>maxi):
+                    maxi=sub[(itr,it)]*sub[(it,itr)]
+                    y=it
+            if(maxi>=0.45):
+                print(itr,y,maxi)   
+            sys.stdout=original_stdout
         
-original_stdout = sys.stdout
-with open('C://Users//sayakdibyo//Pictures//btp_21//subsump12_output.txt', 'w') as out:
-    for itr in reld:
-    
-        for it in relw:
-            sys.stdout=out
-            #print(itr,it,sub[(itr,it)])
-            if(sub[(itr,it)]>=0.45):
-                print(itr,it)  
-         
-        sys.stdout=original_stdout
+    original_stdout = sys.stdout
+
+    """ For each relation r in dbpedia,store a all relations r' in wikidata such that Pr(r==r')>=0.45"""
+    with open('C://Users//sayakdibyo//Pictures//btp_21//equiv_output.txt', 'w') as out:
+        for itr in reld:
         
-original_stdout = sys.stdout
-with open('C://Users//sayakdibyo//Pictures//btp_21//subsump21_output.txt', 'w') as out:
-    for itr in reld:
-    
-        for it in relw:
-            sys.stdout=out
-            #print(itr,it,sub[(itr,it)])
-            if(sub[(it,itr)]>=0.45):
-                print(it,itr)  
-         
-        sys.stdout=original_stdout
+            for it in relw:
+                sys.stdout=out
+                #print(itr,it,sub[(itr,it)])
+                if(sub[(itr,it)]*sub[(it,itr)]>=0.45):
+                    print(itr,it)  
+             
+            sys.stdout=original_stdout
+            
+    original_stdout = sys.stdout
+
+    """ Store subsumption probabilities of dbpedia wrt wikidata"""
+    with open('C://Users//sayakdibyo//Pictures//btp_21//subsump12_output.txt', 'w') as out:
+        for itr in reld:
+        
+            for it in relw:
+                sys.stdout=out
+                #print(itr,it,sub[(itr,it)])
+                if(sub[(itr,it)]>=0.45):
+                    print(itr,it)  
+             
+            sys.stdout=original_stdout
+            
+    original_stdout = sys.stdout
+
+    """ Store subsumption probabilities of wikidata wrt dbpedia"""
+    with open('C://Users//sayakdibyo//Pictures//btp_21//subsump21_output.txt', 'w') as out:
+        for itr in reld:
+        
+            for it in relw:
+                sys.stdout=out
+                #print(itr,it,sub[(itr,it)])
+                if(sub[(it,itr)]>=0.45):
+                    print(it,itr)  
+             
+            sys.stdout=original_stdout
 
 
