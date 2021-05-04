@@ -6,6 +6,6 @@ This folder has four different files:-
 4) verb_alignment.py:- Simply takes the highest equivalent dbpedia relation label for each verb and creates a synonyms file that can be indexed by a dbpedia relation
 
 DATASET:- You can generate interlingua yourself  or use a sample one from [here](https://drive.google.com/drive/folders/1LaaMKcXp29KsnHzfmKP7p5w0YLBeqLzX?usp=sharing)<br/>
-##How to Run ##
+## How to Run ##
 
 After generating the input graph and seeds, run the MAD algorithm as specified in [junto](https://github.com/parthatalukdar/junto).
