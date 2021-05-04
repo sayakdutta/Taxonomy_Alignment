@@ -52,19 +52,21 @@ for filename in os.listdir(directory):
         names=[]
         start=0
         end=0
+
+        """ Get the entitites for which we need to create the triple """
         for n,elem in enumerate(i["entities"]):
             
-            if(n==1):
+            if(n==1): #Get the starting index of second element in tokens list
                 if(elem[0] in i["tokens"]):
                     end=i["tokens"].index(elem[0])
                 elif((re.split('[_,;:\t ]', elem[0]))[0] in i["tokens"]):
                     end=i["tokens"].index((re.split('[_,;:\t ]', elem[0]))[0])
                 else:
                     break
-            elif(n==0):
+            elif(n==0):  #Get the last index of first element in tokens list
                 if(elem[0] in i["tokens"]):
                     start=i["tokens"].index(elem[0])
-                elif((re.split('[_,;:\t ]', elem[0]))[0] in i["tokens"]):
+                elif((re.split('[_,;:\t ]', elem[0]))[-1] in i["tokens"]):
                     start=i["tokens"].index((re.split('[_,;:\t ]', elem[0]))[0])
             entities.append((re.split('[-_,;:\t ]', elem[0]))[-1])
             names.append(elem[0])
@@ -73,17 +75,18 @@ for filename in os.listdir(directory):
             
         if(len(names)!=2 or start>=end):
             continue
-        #t=(re.split('[-_,;:.\t ]', names[1]))[0]
-        for j in range(end-1,-1,-1):
+        
+        """ Iterate backwards to find verb from end index """
+        for j in range(end-1,start,-1):
             if(i["pos"][j].startswith("VB")):
                 break
         
         r=""
-        if(i["tokens"][j] in stop_words or j==0):
+        if(i["tokens"][j] in stop_words or j==start+1): #Check whether obtained verb is stopword or no verb is found
             for n in range(j,start):
                 r+=i["tokens"][n]
         else:
-            r=ps.stem(i["tokens"][j])
+            r=ps.stem(i["tokens"][j])  #Get the stemmed version of the verb
             
         if(r==""):
             continue
